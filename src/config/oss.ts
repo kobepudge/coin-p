@@ -47,6 +47,9 @@ const ossConfig: OSSConfig = {
 const isOSSConfigured = ossConfig.accessKeyId && ossConfig.accessKeySecret
 if (!isOSSConfigured) {
   logger.warn('OSS配置缺失: AccessKey ID 或 AccessKey Secret 未设置，部分功能可能无法正常使用')
+  logger.warn(`当前配置: AccessKeyId=${ossConfig.accessKeyId ? '已设置' : '未设置'}, AccessKeySecret=${ossConfig.accessKeySecret ? '已设置' : '未设置'}`)
+} else {
+  logger.info(`OSS配置已加载: Bucket=${ossConfig.bucket}, Region=${ossConfig.region}`)
 }
 
 // 创建OSS客户端 (仅在配置完整时创建)
