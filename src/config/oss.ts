@@ -37,14 +37,31 @@ export const ENVIRONMENT_INFO = {
 const ossConfig: OSSConfig = {
   accessKeyId: process.env.ALIYUN_ACCESS_KEY_ID || '',
   accessKeySecret: process.env.ALIYUN_ACCESS_KEY_SECRET || '',
-  bucket: process.env.ALIYUN_OSS_BUCKET || 'cximags',
-  region: process.env.ALIYUN_OSS_REGION || 'oss-cn-shenzhen',
+  bucket: process.env.ALIYUN_OSS_BUCKET || '',
+  region: process.env.ALIYUN_OSS_REGION || '',
   timeout: 60000, // 60秒
   secure: true,   // 使用HTTPS
 }
 
 // 验证必要的OSS配置
 const isOSSConfigured = ossConfig.accessKeyId && ossConfig.accessKeySecret
+
+// [DEBUG v1.0.0] 详细的OSS配置调试日志 - 临时调试用，后续需要删除
+logger.info('[DEBUG] OSS配置详情:', {
+  version: 'v1.0.0-debug',
+  accessKeyId: ossConfig.accessKeyId ? `${ossConfig.accessKeyId.substring(0, 8)}...` : '未设置',
+  accessKeyIdLength: ossConfig.accessKeyId?.length || 0,
+  accessKeySecret: ossConfig.accessKeySecret ? '已设置' : '未设置',
+  accessKeySecretLength: ossConfig.accessKeySecret?.length || 0,
+  bucket: ossConfig.bucket || '未设置',
+  region: ossConfig.region || '未设置',
+  timeout: ossConfig.timeout,
+  secure: ossConfig.secure,
+  isConfigured: isOSSConfigured,
+  envPrefix: OSS_ENV_PREFIX,
+  nodeEnv: process.env.NODE_ENV
+})
+
 if (!isOSSConfigured) {
   logger.warn('OSS配置缺失: AccessKey ID 或 AccessKey Secret 未设置，部分功能可能无法正常使用')
   logger.warn(`当前配置: AccessKeyId=${ossConfig.accessKeyId ? '已设置' : '未设置'}, AccessKeySecret=${ossConfig.accessKeySecret ? '已设置' : '未设置'}`)
@@ -54,6 +71,37 @@ if (!isOSSConfigured) {
 
 // 创建OSS客户端 (仅在配置完整时创建)
 export const ossClient = isOSSConfigured ? new OSS(ossConfig) : null
+
+// [DEBUG v1.0.0] OSS连接测试 - 临时调试用，后续需要删除
+if (isOSSConfigured && ossClient) {
+  // 异步测试OSS连接，不阻塞启动
+  setTimeout(async () => {
+    try {
+      logger.info('[DEBUG] 开始测试OSS连接...')
+      const bucketInfo = await ossClient.getBucketInfo(ossConfig.bucket)
+      logger.info('[DEBUG] OSS连接测试成功:', {
+        version: 'v1.0.0-debug',
+        bucketName: bucketInfo.bucket?.name,
+        bucketRegion: bucketInfo.bucket?.region,
+        bucketLocation: bucketInfo.bucket?.location,
+        bucketCreationDate: bucketInfo.bucket?.creationDate
+      })
+    } catch (error: any) {
+      logger.error('[DEBUG] OSS连接测试失败:', {
+        version: 'v1.0.0-debug',
+        error: {
+          message: error.message,
+          code: error.code,
+          status: error.status,
+          statusCode: error.statusCode,
+          requestId: error.requestId,
+          hostId: error.hostId,
+          name: error.name
+        }
+      })
+    }
+  }, 2000) // 延迟2秒测试，确保服务启动完成
+}
 
 // OSS工具类
 export class OSSUtils {
@@ -91,7 +139,18 @@ export class OSSUtils {
     filePath?: string
   }> {
     try {
+      // [DEBUG v1.0.0] 上传开始日志 - 临时调试用，后续需要删除
+      logger.info('[DEBUG] 开始OSS文件上传:', {
+        version: 'v1.0.0-debug',
+        filePath,
+        fileSize: fileBuffer.length,
+        contentType: options.contentType,
+        environment: OSS_ENV_PREFIX,
+        hasMetadata: !!options.metadata && Object.keys(options.metadata).length > 0
+      })
+
       if (!ossClient) {
+        logger.error('[DEBUG] OSS客户端未初始化')
         return {
           success: false,
           error: 'OSS未配置，无法上传文件'
@@ -100,6 +159,18 @@ export class OSSUtils {
 
       // 获取环境特定路径
       const environmentPath = this.getEnvironmentPath(filePath)
+
+      // [DEBUG v1.0.0] 上传参数日志 - 临时调试用，后续需要删除
+      logger.info('[DEBUG] OSS上传参数:', {
+        version: 'v1.0.0-debug',
+        originalPath: filePath,
+        environmentPath,
+        bufferSize: fileBuffer.length,
+        headers: {
+          'Content-Type': options.contentType || 'application/octet-stream',
+          ...options.metadata
+        }
+      })
 
       // 上传文件
       const result = await ossClient.put(environmentPath, fileBuffer, {
@@ -122,6 +193,36 @@ export class OSSUtils {
         filePath: environmentPath
       }
     } catch (error: any) {
+      // [DEBUG v1.0.0] 详细错误日志 - 临时调试用，后续需要删除
+      logger.error('[DEBUG] OSS文件上传失败:', {
+        version: 'v1.0.0-debug',
+        service: 'coin-trading-api',
+        filePath,
+        environmentPath: this.getEnvironmentPath(filePath),
+        fileSize: fileBuffer.length,
+        contentType: options.contentType,
+        environment: OSS_ENV_PREFIX,
+        error: {
+          message: error.message,
+          code: error.code,
+          status: error.status,
+          statusCode: error.statusCode,
+          name: error.name,
+          requestId: error.requestId,
+          hostId: error.hostId,
+          headers: error.headers,
+          params: error.params,
+          stack: error.stack
+        },
+        ossConfig: {
+          bucket: process.env.ALIYUN_OSS_BUCKET,
+          region: process.env.ALIYUN_OSS_REGION,
+          accessKeyIdSet: !!process.env.ALIYUN_ACCESS_KEY_ID,
+          accessKeySecretSet: !!process.env.ALIYUN_ACCESS_KEY_SECRET
+        }
+      })
+
+      // 保持原有的简洁错误日志
       logger.error('OSS文件上传失败:', {
         filePath,
         error: error.message,

@@ -98,7 +98,28 @@ export const uploadImage = async (req: Request, res: Response) => {
         oss_path: uploadResult.filePath
       }
     })
-  } catch (error) {
+  } catch (error: any) {
+    // [DEBUG v1.0.0] 详细的controller错误日志 - 临时调试用，后续需要删除
+    logger.error('[DEBUG] 文件上传失败:', {
+      version: 'v1.0.0-debug',
+      service: 'coin-trading-api',
+      originalName: req.file?.originalname,
+      fileSize: req.file?.size,
+      mimetype: req.file?.mimetype,
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      },
+      requestInfo: {
+        method: req.method,
+        url: req.originalUrl,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      }
+    })
+
+    // 保持原有的简洁错误日志
     logger.error('文件上传失败:', error)
     res.status(500).json({
       success: false,
@@ -166,7 +187,28 @@ export const uploadPaymentQr = async (req: Request, res: Response) => {
         oss_path: uploadResult.filePath
       }
     })
-  } catch (error) {
+  } catch (error: any) {
+    // [DEBUG v1.0.0] 详细的controller错误日志 - 临时调试用，后续需要删除
+    logger.error('[DEBUG] 支付二维码上传失败:', {
+      version: 'v1.0.0-debug',
+      service: 'coin-trading-api',
+      originalName: req.file?.originalname,
+      fileSize: req.file?.size,
+      mimetype: req.file?.mimetype,
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      },
+      requestInfo: {
+        method: req.method,
+        url: req.originalUrl,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      }
+    })
+
+    // 保持原有的简洁错误日志
     logger.error('支付二维码上传失败:', error)
     res.status(500).json({
       success: false,
@@ -228,7 +270,27 @@ export const deleteFile = async (req: Request, res: Response) => {
       success: true,
       message: '文件删除成功'
     })
-  } catch (error) {
+  } catch (error: any) {
+    // [DEBUG v1.0.0] 详细的controller错误日志 - 临时调试用，后续需要删除
+    logger.error('[DEBUG] 文件删除失败:', {
+      version: 'v1.0.0-debug',
+      service: 'coin-trading-api',
+      filename: req.params.filename,
+      type: req.params.type,
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      },
+      requestInfo: {
+        method: req.method,
+        url: req.originalUrl,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      }
+    })
+
+    // 保持原有的简洁错误日志
     logger.error('文件删除失败:', error)
     res.status(500).json({
       success: false,
