@@ -66,7 +66,7 @@ router.get('/oss-debug', async (req, res) => {
         const listResult = await ossClient.list({
           prefix: `${OSS_ENV_PREFIX}/`,
           'max-keys': 5
-        })
+        }, {})
         ;(debugInfo as any).listTest = {
           success: true,
           fileCount: listResult.objects?.length || 0,
