@@ -43,14 +43,14 @@ router.get('/oss-debug', async (req, res) => {
       try {
         // 测试获取bucket信息
         const bucketInfo = await ossClient.getBucketInfo(process.env.ALIYUN_OSS_BUCKET!)
-        debugInfo.bucketTest = {
+        ;(debugInfo as any).bucketTest = {
           success: true,
-          bucketName: bucketInfo.bucket?.name,
-          bucketRegion: bucketInfo.bucket?.region,
-          bucketLocation: bucketInfo.bucket?.location
+          bucketName: (bucketInfo as any).bucket?.name,
+          bucketRegion: (bucketInfo as any).bucket?.region,
+          bucketLocation: (bucketInfo as any).bucket?.location
         }
       } catch (error: any) {
-        debugInfo.bucketTest = {
+        ;(debugInfo as any).bucketTest = {
           success: false,
           error: {
             message: error.message,
@@ -67,17 +67,17 @@ router.get('/oss-debug', async (req, res) => {
           prefix: `${OSS_ENV_PREFIX}/`,
           'max-keys': 5
         })
-        debugInfo.listTest = {
+        ;(debugInfo as any).listTest = {
           success: true,
           fileCount: listResult.objects?.length || 0,
-          files: listResult.objects?.slice(0, 3).map(obj => ({
+          files: listResult.objects?.slice(0, 3).map((obj: any) => ({
             name: obj.name,
             size: obj.size,
             lastModified: obj.lastModified
           })) || []
         }
       } catch (error: any) {
-        debugInfo.listTest = {
+        ;(debugInfo as any).listTest = {
           success: false,
           error: {
             message: error.message,
