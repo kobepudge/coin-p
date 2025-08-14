@@ -1,0 +1,38 @@
+# Railway部署配置
+[build]
+builder = "dockerfile"
+dockerfilePath = "backend/Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 600
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[environments.staging.variables]
+NODE_ENV = "staging"
+
+# 数据库配置 (使用Railway提供的变量)
+DB_HOST = "${{ MYSQLHOST }}"
+DB_PORT = "${{ MYSQLPORT }}"
+DB_NAME = "${{ MYSQLDATABASE }}"
+DB_USER = "${{ MYSQLUSER }}"
+DB_PASSWORD = "${{ MYSQLPASSWORD }}"
+
+# Redis配置 (使用Railway提供的变量)
+REDIS_HOST = "${{ REDISHOST }}"
+REDIS_PORT = "${{ REDISPORT }}"
+REDIS_PASSWORD = "${{ REDISPASSWORD }}"
+
+# JWT配置
+JWT_SECRET = "${{ JWT_SECRET }}"
+JWT_EXPIRES_IN = "7d"
+
+# 阿里云OSS配置
+ALIYUN_ACCESS_KEY_ID = "${{ ALIYUN_ACCESS_KEY_ID }}"
+ALIYUN_ACCESS_KEY_SECRET = "${{ ALIYUN_ACCESS_KEY_SECRET }}"
+ALIYUN_OSS_BUCKET = "${{ ALIYUN_OSS_BUCKET }}"
+ALIYUN_OSS_REGION = "${{ ALIYUN_OSS_REGION }}"
+
+# CORS配置
+FRONTEND_URL = "${{ FRONTEND_URL }}"
