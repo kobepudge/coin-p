@@ -4,14 +4,14 @@ FROM node:20-alpine as builder
 WORKDIR /app
 
 # 复制package文件
-COPY backend/package*.json ./
+COPY package*.json ./
 
 # 安装所有依赖 (包括devDependencies用于构建)
 RUN npm ci
 
 # 复制源代码
-COPY backend/src ./src
-COPY backend/tsconfig.json ./
+COPY src ./src
+COPY tsconfig.json ./
 
 # 构建TypeScript项目
 RUN npm run build
@@ -29,7 +29,7 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 
 # 复制package文件并安装生产依赖
-COPY backend/package*.json ./
+COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 # 复制构建产物
