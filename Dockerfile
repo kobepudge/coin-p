@@ -12,6 +12,7 @@ RUN npm ci
 # 复制源代码和配置文件
 COPY src ./src
 COPY tsconfig.json ./
+COPY .sequelizerc ./
 
 # 构建TypeScript项目
 RUN npm run build
@@ -38,6 +39,7 @@ RUN npm ci --only=production && \
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --chown=nodejs:nodejs src/config/database.js ./src/config/
 COPY --chown=nodejs:nodejs src/database/migrations ./src/database/migrations/
+COPY --chown=nodejs:nodejs .sequelizerc ./
 COPY --chown=nodejs:nodejs start.sh ./
 
 # 创建必要目录并设置权限
