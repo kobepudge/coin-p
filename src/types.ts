@@ -27,6 +27,7 @@ export interface Merchant {
   stock_or_demand?: string
   speed?: string
   guarantee?: string
+  alipay_account?: string // 支付宝账号
   status: MerchantStatus
   is_current_seller?: boolean
   payment_qr?: string

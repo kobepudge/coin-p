@@ -33,7 +33,14 @@ export const validateRequest = (
       query: req.query
     })
 
-    return next(new ValidationError(validationErrors))
+    // 构建更友好的错误信息
+    const errorMessages = Object.entries(validationErrors)
+      .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+      .join('; ')
+
+    const friendlyMessage = `数据验证失败: ${errorMessages}`
+
+    return next(new ValidationError(validationErrors, friendlyMessage))
   }
   
   next()

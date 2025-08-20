@@ -15,6 +15,7 @@ export class MerchantModel extends Model<Merchant, MerchantCreationAttributes> i
   public stock_or_demand!: string
   public speed!: string
   public guarantee?: string
+  public alipay_account?: string
   public payment_qr?: string
   public transfer_game_id?: string
   public is_current_seller!: boolean
@@ -127,6 +128,14 @@ MerchantModel.init(
       comment: '服务保障',
       validate: {
         len: [0, 200]
+      }
+    },
+    alipay_account: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: '支付宝账号',
+      validate: {
+        len: [0, 100]
       }
     },
     payment_qr: {

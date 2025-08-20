@@ -114,38 +114,84 @@ export class OrderService {
       payment_qr_url: string
     }
   ): Promise<Order> {
-    // 验证商家是否存在且在线
-    const merchant = await MerchantModel.findByPk(orderData.merchant_id)
-    
-    if (!merchant) {
-      throw new AppError('商家不存在', HTTP_STATUS.NOT_FOUND)
-    }
-    
-    if (!merchant.isActive()) {
-      throw new AppError('商家当前不可用', HTTP_STATUS.BAD_REQUEST)
-    }
-    
-    // 检查是否有重复的游戏ID订单（防止重复提交）
-    const existingOrder = await OrderModel.findOne({
-      where: {
+    try {
+      // 记录订单创建请求
+      logger.info('创建订单请求', {
         merchant_id: orderData.merchant_id,
         player_game_id: orderData.player_game_id,
-        status: 'pending'
+        payment_qr_url: orderData.payment_qr_url ? '已提供' : '未提供'
+      })
+
+      // 验证商家是否存在且在线
+      const merchant = await MerchantModel.findByPk(orderData.merchant_id)
+
+      if (!merchant) {
+        logger.warn('商家不存在', { merchant_id: orderData.merchant_id })
+        throw new AppError('商家不存在', HTTP_STATUS.NOT_FOUND)
       }
-    })
-    
-    if (existingOrder) {
-      throw new AppError('您已有相同游戏ID的待处理订单', HTTP_STATUS.BAD_REQUEST)
+
+      if (!merchant.isActive()) {
+        logger.warn('商家不可用', {
+          merchant_id: orderData.merchant_id,
+          merchant_status: merchant.status
+        })
+        throw new AppError('商家当前不可用', HTTP_STATUS.BAD_REQUEST)
+      }
+
+      // 检查是否有重复的游戏ID订单（防止重复提交）
+      logger.info('检查重复订单', {
+        merchant_id: orderData.merchant_id,
+        player_game_id: orderData.player_game_id
+      })
+
+      const existingOrder = await OrderModel.findOne({
+        where: {
+          merchant_id: orderData.merchant_id,
+          player_game_id: orderData.player_game_id,
+          status: 'pending'
+        }
+      })
+
+      if (existingOrder) {
+        logger.warn('发现重复订单', {
+          existing_order_id: existingOrder.id,
+          merchant_id: orderData.merchant_id,
+          player_game_id: orderData.player_game_id
+        })
+        throw new AppError('您已有相同游戏ID的待处理订单', HTTP_STATUS.BAD_REQUEST)
+      }
+
+      // 创建订单
+      const order = await OrderModel.create({
+        merchant_id: orderData.merchant_id,
+        player_game_id: orderData.player_game_id,
+        payment_qr_url: orderData.payment_qr_url,
+        status: 'pending'
+      })
+
+      logger.info('订单创建成功', {
+        order_id: order.id,
+        merchant_id: orderData.merchant_id,
+        player_game_id: orderData.player_game_id
+      })
+
+      return order.toSafeJSON()
+    } catch (error) {
+      // 如果是已知的 AppError，直接重新抛出
+      if (error instanceof AppError) {
+        throw error
+      }
+
+      // 记录未知错误
+      logger.error('创建订单时发生未知错误', {
+        error: error.message,
+        stack: error.stack,
+        orderData
+      })
+
+      // 抛出通用错误
+      throw new AppError('订单创建失败，请稍后重试', HTTP_STATUS.INTERNAL_SERVER_ERROR)
     }
-    
-    const order = await OrderModel.create({
-      merchant_id: orderData.merchant_id,
-      player_game_id: orderData.player_game_id,
-      payment_qr_url: orderData.payment_qr_url,
-      status: 'pending'
-    })
-    
-    return order.toSafeJSON()
   }
 
   /**
