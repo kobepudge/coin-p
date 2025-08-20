@@ -11,6 +11,7 @@ export class OrderModel extends Model<Order, OrderCreationAttributes> implements
   public merchant_id!: number
   public player_game_id!: string
   public payment_qr_url!: string
+  public transfer_screenshot_url?: string
   public status!: OrderStatus
   public admin_note?: string
   public created_at!: Date
@@ -115,6 +116,14 @@ OrderModel.init(
       comment: '玩家收款二维码URL',
       validate: {
         len: [1, 500]
+      }
+    },
+    transfer_screenshot_url: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: '转账截图URL',
+      validate: {
+        len: [0, 500]
       }
     },
     status: {

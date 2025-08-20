@@ -42,6 +42,7 @@ export interface Order {
   merchant_id: number
   player_game_id: string
   payment_qr_url?: string
+  transfer_screenshot_url?: string
   amount?: number
   quantity?: number
   status: OrderStatus

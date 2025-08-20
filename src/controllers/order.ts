@@ -123,7 +123,8 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   const orderData = {
     merchant_id: req.body.merchant_id,
     player_game_id: req.body.player_game_id,
-    payment_qr_url: req.body.payment_qr_url
+    payment_qr_url: req.body.payment_qr_url,
+    transfer_screenshot_url: req.body.transfer_screenshot_url
   }
 
   const order = await OrderService.createOrder(orderData)

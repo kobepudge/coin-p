@@ -113,6 +113,7 @@ export class OrderService {
       merchant_id: number
       player_game_id: string
       payment_qr_url: string
+      transfer_screenshot_url?: string
     }
   ): Promise<Order> {
     try {
@@ -167,6 +168,7 @@ export class OrderService {
         merchant_id: orderData.merchant_id,
         player_game_id: orderData.player_game_id,
         payment_qr_url: orderData.payment_qr_url,
+        transfer_screenshot_url: orderData.transfer_screenshot_url,
         status: 'pending'
       })
 

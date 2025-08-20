@@ -130,6 +130,7 @@ class OrderService {
                 merchant_id: orderData.merchant_id,
                 player_game_id: orderData.player_game_id,
                 payment_qr_url: orderData.payment_qr_url,
+                transfer_screenshot_url: orderData.transfer_screenshot_url,
                 status: 'pending'
             });
             logger_1.logger.info('订单创建成功', {

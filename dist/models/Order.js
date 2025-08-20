@@ -95,6 +95,14 @@ OrderModel.init({
             len: [1, 500]
         }
     },
+    transfer_screenshot_url: {
+        type: sequelize_1.DataTypes.STRING(500),
+        allowNull: true,
+        comment: '转账截图URL',
+        validate: {
+            len: [0, 500]
+        }
+    },
     status: {
         type: sequelize_1.DataTypes.ENUM('pending', 'processing', 'completed', 'failed', 'cancelled', 'rejected'),
         allowNull: false,
