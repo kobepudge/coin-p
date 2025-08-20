@@ -22,10 +22,17 @@ app.use((0, helmet_1.default)({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 // CORS配置
+const getFrontendUrls = () => {
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (frontendUrl) {
+        // 支持多个域名，用逗号分隔
+        return frontendUrl.split(',').map(url => url.trim());
+    }
+    // 默认开发环境域名
+    return ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
+};
 const corsOptions = {
-    origin: process.env.NODE_ENV === 'production'
-        ? ['https://yourdomain.com', 'https://www.yourdomain.com']
-        : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: getFrontendUrls(),
     credentials: true,
     optionsSuccessStatus: 200,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

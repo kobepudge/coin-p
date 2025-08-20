@@ -33,6 +33,7 @@ router.get('/', (req, res) => {
             'POST /public/orders - 提交订单',
             'POST /upload/image - 上传图片 (需要认证)',
             'POST /upload/payment-qr - 上传支付二维码',
+            'POST /upload/transfer-screenshot - 上传转账截图',
             'DELETE /upload/:filename - 删除文件 (需要认证)',
             // 'GET /admins - 获取管理员列表 (仅超级管理员)',
             // 'POST /admins - 创建管理员 (仅超级管理员)'

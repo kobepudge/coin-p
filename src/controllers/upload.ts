@@ -317,6 +317,107 @@ export const getOssEnvironmentInfo = async (req: Request, res: Response) => {
   }
 }
 
+// 上传转账截图
+export const uploadTransferScreenshot = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: '请选择要上传的转账截图'
+      })
+    }
+
+    // [DEBUG v1.0.0] 详细的controller日志 - 临时调试用，后续需要删除
+    logger.info('[DEBUG] 转账截图上传开始:', {
+      version: 'v1.0.0-debug',
+      service: 'coin-trading-api',
+      originalName: req.file.originalname,
+      fileSize: req.file.size,
+      mimetype: req.file.mimetype,
+      requestInfo: {
+        method: req.method,
+        url: req.originalUrl,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      }
+    })
+
+    // 记录OSS环境信息
+    const envInfo = logEnvironmentInfo()
+
+    // 压缩图片
+    const compressedBuffer = await sharp(req.file.buffer)
+      .resize(1200, 1200, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({
+        quality: 85,
+        progressive: true
+      })
+      .toBuffer()
+
+    // 生成文件名
+    const filename = generateFilename(req.file.originalname)
+    const ossPath = `transfer-screenshots/${filename}`
+
+    // 上传到OSS
+    const result = await OSSUtils.uploadFile(ossPath, compressedBuffer, {
+      contentType: 'image/jpeg'
+    })
+
+    // [DEBUG v1.0.0] 详细的上传结果日志 - 临时调试用，后续需要删除
+    logger.info('[DEBUG] 转账截图上传成功:', {
+      version: 'v1.0.0-debug',
+      service: 'coin-trading-api',
+      originalName: req.file.originalname,
+      filename: filename,
+      ossPath: ossPath,
+      url: result.url,
+      size: compressedBuffer.length,
+      environment: envInfo
+    })
+
+    res.json({
+      success: true,
+      message: '转账截图上传成功',
+      data: {
+        filename: filename,
+        url: result.url,
+        size: compressedBuffer.length
+      }
+    })
+
+  } catch (error: any) {
+    // [DEBUG v1.0.0] 详细的controller错误日志 - 临时调试用，后续需要删除
+    logger.error('[DEBUG] 转账截图上传失败:', {
+      version: 'v1.0.0-debug',
+      service: 'coin-trading-api',
+      originalName: req.file?.originalname,
+      fileSize: req.file?.size,
+      mimetype: req.file?.mimetype,
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      },
+      requestInfo: {
+        method: req.method,
+        url: req.originalUrl,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      }
+    })
+
+    // 保持原有的简洁错误日志
+    logger.error('转账截图上传失败:', error)
+    res.status(500).json({
+      success: false,
+      message: '转账截图上传失败'
+    })
+  }
+}
+
 // 导出multer中间件
 export const uploadMiddleware = {
   single: upload.single.bind(upload),

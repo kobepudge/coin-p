@@ -26,8 +26,9 @@ exports.ENVIRONMENT_INFO = {
 const ossConfig = {
     accessKeyId: process.env.ALIYUN_ACCESS_KEY_ID || '',
     accessKeySecret: process.env.ALIYUN_ACCESS_KEY_SECRET || '',
-    bucket: process.env.ALIYUN_OSS_BUCKET || 'cximags',
-    region: process.env.ALIYUN_OSS_REGION || 'oss-cn-shenzhen',
+    bucket: process.env.ALIYUN_OSS_BUCKET || '',
+    region: process.env.ALIYUN_OSS_REGION || '',
+    endpoint: 'oss-accelerate.aliyuncs.com', // 使用传输加速域名
     timeout: 60000, // 60秒
     secure: true, // 使用HTTPS
 };
@@ -35,6 +36,10 @@ const ossConfig = {
 const isOSSConfigured = ossConfig.accessKeyId && ossConfig.accessKeySecret;
 if (!isOSSConfigured) {
     logger_1.logger.warn('OSS配置缺失: AccessKey ID 或 AccessKey Secret 未设置，部分功能可能无法正常使用');
+    logger_1.logger.warn(`当前配置: AccessKeyId=${ossConfig.accessKeyId ? '已设置' : '未设置'}, AccessKeySecret=${ossConfig.accessKeySecret ? '已设置' : '未设置'}`);
+}
+else {
+    logger_1.logger.info(`OSS配置已加载: Bucket=${ossConfig.bucket}, Region=${ossConfig.region}`);
 }
 // 创建OSS客户端 (仅在配置完整时创建)
 exports.ossClient = isOSSConfigured ? new ali_oss_1.default(ossConfig) : null;
@@ -88,6 +93,7 @@ class OSSUtils {
             };
         }
         catch (error) {
+            // 保持原有的简洁错误日志
             logger_1.logger.error('OSS文件上传失败:', {
                 filePath,
                 error: error.message,

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadMiddleware = exports.getOssEnvironmentInfo = exports.deleteFile = exports.uploadPaymentQr = exports.uploadImage = void 0;
+exports.uploadMiddleware = exports.uploadTransferScreenshot = exports.getOssEnvironmentInfo = exports.deleteFile = exports.uploadPaymentQr = exports.uploadImage = void 0;
 const multer_1 = __importDefault(require("multer"));
 const sharp_1 = __importDefault(require("sharp"));
 const path_1 = __importDefault(require("path"));
@@ -91,6 +91,26 @@ const uploadImage = async (req, res) => {
         });
     }
     catch (error) {
+        // [DEBUG v1.0.0] 详细的controller错误日志 - 临时调试用，后续需要删除
+        logger_1.logger.error('[DEBUG] 文件上传失败:', {
+            version: 'v1.0.0-debug',
+            service: 'coin-trading-api',
+            originalName: req.file?.originalname,
+            fileSize: req.file?.size,
+            mimetype: req.file?.mimetype,
+            error: {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            },
+            requestInfo: {
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
+            }
+        });
+        // 保持原有的简洁错误日志
         logger_1.logger.error('文件上传失败:', error);
         res.status(500).json({
             success: false,
@@ -150,6 +170,26 @@ const uploadPaymentQr = async (req, res) => {
         });
     }
     catch (error) {
+        // [DEBUG v1.0.0] 详细的controller错误日志 - 临时调试用，后续需要删除
+        logger_1.logger.error('[DEBUG] 支付二维码上传失败:', {
+            version: 'v1.0.0-debug',
+            service: 'coin-trading-api',
+            originalName: req.file?.originalname,
+            fileSize: req.file?.size,
+            mimetype: req.file?.mimetype,
+            error: {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            },
+            requestInfo: {
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
+            }
+        });
+        // 保持原有的简洁错误日志
         logger_1.logger.error('支付二维码上传失败:', error);
         res.status(500).json({
             success: false,
@@ -205,6 +245,25 @@ const deleteFile = async (req, res) => {
         });
     }
     catch (error) {
+        // [DEBUG v1.0.0] 详细的controller错误日志 - 临时调试用，后续需要删除
+        logger_1.logger.error('[DEBUG] 文件删除失败:', {
+            version: 'v1.0.0-debug',
+            service: 'coin-trading-api',
+            filename: req.params.filename,
+            type: req.params.type,
+            error: {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            },
+            requestInfo: {
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
+            }
+        });
+        // 保持原有的简洁错误日志
         logger_1.logger.error('文件删除失败:', error);
         res.status(500).json({
             success: false,
@@ -231,6 +290,99 @@ const getOssEnvironmentInfo = async (req, res) => {
     }
 };
 exports.getOssEnvironmentInfo = getOssEnvironmentInfo;
+// 上传转账截图
+const uploadTransferScreenshot = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: '请选择要上传的转账截图'
+            });
+        }
+        // [DEBUG v1.0.0] 详细的controller日志 - 临时调试用，后续需要删除
+        logger_1.logger.info('[DEBUG] 转账截图上传开始:', {
+            version: 'v1.0.0-debug',
+            service: 'coin-trading-api',
+            originalName: req.file.originalname,
+            fileSize: req.file.size,
+            mimetype: req.file.mimetype,
+            requestInfo: {
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
+            }
+        });
+        // 记录OSS环境信息
+        const envInfo = logEnvironmentInfo();
+        // 压缩图片
+        const compressedBuffer = await (0, sharp_1.default)(req.file.buffer)
+            .resize(1200, 1200, {
+            fit: 'inside',
+            withoutEnlargement: true
+        })
+            .jpeg({
+            quality: 85,
+            progressive: true
+        })
+            .toBuffer();
+        // 生成文件名
+        const filename = generateFilename(req.file.originalname);
+        const ossPath = `transfer-screenshots/${filename}`;
+        // 上传到OSS
+        const result = await oss_1.OSSUtils.uploadFile(ossPath, compressedBuffer, {
+            contentType: 'image/jpeg'
+        });
+        // [DEBUG v1.0.0] 详细的上传结果日志 - 临时调试用，后续需要删除
+        logger_1.logger.info('[DEBUG] 转账截图上传成功:', {
+            version: 'v1.0.0-debug',
+            service: 'coin-trading-api',
+            originalName: req.file.originalname,
+            filename: filename,
+            ossPath: ossPath,
+            url: result.url,
+            size: compressedBuffer.length,
+            environment: envInfo
+        });
+        res.json({
+            success: true,
+            message: '转账截图上传成功',
+            data: {
+                filename: filename,
+                url: result.url,
+                size: compressedBuffer.length
+            }
+        });
+    }
+    catch (error) {
+        // [DEBUG v1.0.0] 详细的controller错误日志 - 临时调试用，后续需要删除
+        logger_1.logger.error('[DEBUG] 转账截图上传失败:', {
+            version: 'v1.0.0-debug',
+            service: 'coin-trading-api',
+            originalName: req.file?.originalname,
+            fileSize: req.file?.size,
+            mimetype: req.file?.mimetype,
+            error: {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            },
+            requestInfo: {
+                method: req.method,
+                url: req.originalUrl,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
+            }
+        });
+        // 保持原有的简洁错误日志
+        logger_1.logger.error('转账截图上传失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '转账截图上传失败'
+        });
+    }
+};
+exports.uploadTransferScreenshot = uploadTransferScreenshot;
 // 导出multer中间件
 exports.uploadMiddleware = {
     single: upload.single.bind(upload),

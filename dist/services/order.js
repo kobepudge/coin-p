@@ -6,6 +6,7 @@ const Merchant_1 = require("@/models/Merchant");
 const error_1 = require("@/middlewares/error");
 const constants_1 = require("@/constants");
 const operationLog_1 = require("@/services/operationLog");
+const logger_1 = require("@/utils/logger");
 const sequelize_1 = require("sequelize");
 class OrderService {
     /**
@@ -84,32 +85,76 @@ class OrderService {
      * 创建订单（用户提交）
      */
     static async createOrder(orderData) {
-        // 验证商家是否存在且在线
-        const merchant = await Merchant_1.MerchantModel.findByPk(orderData.merchant_id);
-        if (!merchant) {
-            throw new error_1.AppError('商家不存在', constants_1.HTTP_STATUS.NOT_FOUND);
-        }
-        if (!merchant.isActive()) {
-            throw new error_1.AppError('商家当前不可用', constants_1.HTTP_STATUS.BAD_REQUEST);
-        }
-        // 检查是否有重复的游戏ID订单（防止重复提交）
-        const existingOrder = await Order_1.OrderModel.findOne({
-            where: {
+        try {
+            // 记录订单创建请求
+            logger_1.logger.info('创建订单请求', {
                 merchant_id: orderData.merchant_id,
                 player_game_id: orderData.player_game_id,
-                status: 'pending'
+                payment_qr_url: orderData.payment_qr_url ? '已提供' : '未提供'
+            });
+            // 验证商家是否存在且在线
+            const merchant = await Merchant_1.MerchantModel.findByPk(orderData.merchant_id);
+            if (!merchant) {
+                logger_1.logger.warn('商家不存在', { merchant_id: orderData.merchant_id });
+                throw new error_1.AppError('商家不存在', constants_1.HTTP_STATUS.NOT_FOUND);
             }
-        });
-        if (existingOrder) {
-            throw new error_1.AppError('您已有相同游戏ID的待处理订单', constants_1.HTTP_STATUS.BAD_REQUEST);
+            if (!merchant.isActive()) {
+                logger_1.logger.warn('商家不可用', {
+                    merchant_id: orderData.merchant_id,
+                    merchant_status: merchant.status
+                });
+                throw new error_1.AppError('商家当前不可用', constants_1.HTTP_STATUS.BAD_REQUEST);
+            }
+            // 检查是否有重复的游戏ID订单（防止重复提交）
+            logger_1.logger.info('检查重复订单', {
+                merchant_id: orderData.merchant_id,
+                player_game_id: orderData.player_game_id
+            });
+            const existingOrder = await Order_1.OrderModel.findOne({
+                where: {
+                    merchant_id: orderData.merchant_id,
+                    player_game_id: orderData.player_game_id,
+                    status: 'pending'
+                }
+            });
+            if (existingOrder) {
+                logger_1.logger.warn('发现重复订单', {
+                    existing_order_id: existingOrder.id,
+                    merchant_id: orderData.merchant_id,
+                    player_game_id: orderData.player_game_id
+                });
+                throw new error_1.AppError('您已有相同游戏ID的待处理订单', constants_1.HTTP_STATUS.BAD_REQUEST);
+            }
+            // 创建订单
+            const order = await Order_1.OrderModel.create({
+                merchant_id: orderData.merchant_id,
+                player_game_id: orderData.player_game_id,
+                payment_qr_url: orderData.payment_qr_url,
+                status: 'pending'
+            });
+            logger_1.logger.info('订单创建成功', {
+                order_id: order.id,
+                merchant_id: orderData.merchant_id,
+                player_game_id: orderData.player_game_id
+            });
+            return order.toSafeJSON();
         }
-        const order = await Order_1.OrderModel.create({
-            merchant_id: orderData.merchant_id,
-            player_game_id: orderData.player_game_id,
-            payment_qr_url: orderData.payment_qr_url,
-            status: 'pending'
-        });
-        return order.toSafeJSON();
+        catch (error) {
+            // 如果是已知的 AppError，直接重新抛出
+            if (error instanceof error_1.AppError) {
+                throw error;
+            }
+            // 记录未知错误
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            logger_1.logger.error('创建订单时发生未知错误', {
+                error: errorMessage,
+                stack: errorStack,
+                orderData
+            });
+            // 抛出通用错误
+            throw new error_1.AppError('订单创建失败，请稍后重试', constants_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        }
     }
     /**
      * 更新订单状态（管理员操作）

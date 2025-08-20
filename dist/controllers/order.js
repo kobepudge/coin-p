@@ -32,9 +32,8 @@ exports.updateOrderStatusValidation = [
         .isIn(['pending', 'completed', 'failed', 'rejected'])
         .withMessage('状态必须是pending、completed、failed或rejected之一'),
     (0, express_validator_1.body)('admin_note')
+        .optional()
         .trim()
-        .notEmpty()
-        .withMessage('管理员备注不能为空')
         .isLength({ max: 1000 })
         .withMessage('管理员备注长度不能超过1000字符')
 ];
@@ -50,9 +49,8 @@ exports.batchUpdateStatusValidation = [
         .isIn(['pending', 'completed', 'failed', 'rejected'])
         .withMessage('状态必须是pending、completed、failed或rejected之一'),
     (0, express_validator_1.body)('admin_note')
+        .optional()
         .trim()
-        .notEmpty()
-        .withMessage('管理员备注不能为空')
         .isLength({ max: 1000 })
         .withMessage('管理员备注长度不能超过1000字符')
 ];
@@ -92,6 +90,12 @@ exports.getOrderById = (0, error_1.asyncHandler)(async (req, res) => {
  * 创建订单（公开接口，用户提交）
  */
 exports.createOrder = (0, error_1.asyncHandler)(async (req, res) => {
+    // 记录请求信息
+    console.log('收到创建订单请求:', {
+        body: req.body,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+    });
     const orderData = {
         merchant_id: req.body.merchant_id,
         player_game_id: req.body.player_game_id,
