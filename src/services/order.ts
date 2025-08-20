@@ -184,9 +184,12 @@ export class OrderService {
       }
 
       // 记录未知错误
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorStack = error instanceof Error ? error.stack : undefined
+
       logger.error('创建订单时发生未知错误', {
-        error: error.message,
-        stack: error.stack,
+        error: errorMessage,
+        stack: errorStack,
         orderData
       })
 

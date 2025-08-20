@@ -133,7 +133,7 @@ async function startServer() {
       process.exit(1)
     })
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('服务器启动失败:', error)
     process.exit(1)
   }
