@@ -3,6 +3,7 @@ import { MerchantModel } from '@/models/Merchant'
 import { AppError } from '@/middlewares/error'
 import { HTTP_STATUS } from '@/constants'
 import { OperationLogService } from '@/services/operationLog'
+import { logger } from '@/utils/logger'
 import type { Order, OrderStatus } from '@/types'
 import { Op } from 'sequelize'
 
