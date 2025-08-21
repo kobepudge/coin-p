@@ -3,7 +3,7 @@
 
 ALTER TABLE merchants 
 ADD COLUMN alipay_account VARCHAR(100) DEFAULT NULL 
-COMMENT '支付宝账号';
+COMMENT '支付宝收款账号';
 
 -- 创建索引（可选，如果需要按支付宝账号查询）
 -- CREATE INDEX idx_merchants_alipay_account ON merchants(alipay_account);

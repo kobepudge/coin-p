@@ -103,7 +103,7 @@ MerchantModel.init({
     alipay_account: {
         type: sequelize_1.DataTypes.STRING(100),
         allowNull: true,
-        comment: '支付宝账号',
+        comment: '支付宝收款账号',
         validate: {
             len: [0, 100]
         }
