@@ -12,6 +12,6 @@ router.post('/payment-qr', upload_1.uploadMiddleware.single('qr'), upload_1.uplo
 router.post('/transfer-screenshot', upload_1.uploadMiddleware.single('screenshot'), upload_1.uploadTransferScreenshot);
 // 删除文件 (需要认证)
 router.delete('/:filename', auth_1.authenticateToken, upload_1.deleteFile);
-// 获取OSS环境信息 (需要认证)
-router.get('/environment-info', auth_1.authenticateToken, upload_1.getOssEnvironmentInfo);
+// 获取S3环境信息 (需要认证)
+router.get('/environment-info', auth_1.authenticateToken, upload_1.getS3EnvironmentInfo);
 exports.default = router;

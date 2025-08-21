@@ -3,12 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadMiddleware = exports.uploadTransferScreenshot = exports.getOssEnvironmentInfo = exports.deleteFile = exports.uploadPaymentQr = exports.uploadImage = void 0;
+exports.uploadMiddleware = exports.uploadTransferScreenshot = exports.getS3EnvironmentInfo = exports.deleteFile = exports.uploadPaymentQr = exports.uploadImage = void 0;
 const multer_1 = __importDefault(require("multer"));
 const sharp_1 = __importDefault(require("sharp"));
 const path_1 = __importDefault(require("path"));
 const logger_1 = require("@/utils/logger");
-const oss_1 = require("@/config/oss");
+const s3_1 = require("@/config/s3");
 // 配置multer存储
 const storage = multer_1.default.memoryStorage();
 const upload = (0, multer_1.default)({
@@ -26,10 +26,10 @@ const upload = (0, multer_1.default)({
         }
     }
 });
-// OSS环境信息日志函数
+// S3环境信息日志函数
 const logEnvironmentInfo = () => {
-    const envInfo = oss_1.OSSUtils.getEnvironmentInfo();
-    logger_1.logger.info('OSS环境配置:', envInfo);
+    const envInfo = s3_1.S3Utils.getEnvironmentInfo();
+    logger_1.logger.info('S3环境配置:', envInfo);
     return envInfo;
 };
 // 生成文件名
@@ -51,7 +51,7 @@ const uploadImage = async (req, res) => {
         }
         // 生成文件名
         const filename = generateFilename(req.file.originalname);
-        const ossPath = `images/${filename.replace('.jpeg', '.jpg').replace('.png', '.jpg')}`;
+        const s3Path = `images/${filename.replace('.jpeg', '.jpg').replace('.png', '.jpg')}`;
         // 使用sharp处理图片（压缩和格式转换）
         const processedImageBuffer = await (0, sharp_1.default)(req.file.buffer)
             .resize(800, 800, {
@@ -60,8 +60,8 @@ const uploadImage = async (req, res) => {
         })
             .jpeg({ quality: 85 }) // 转为JPEG格式，85%质量
             .toBuffer();
-        // 上传到OSS
-        const uploadResult = await oss_1.OSSUtils.uploadFile(ossPath, processedImageBuffer, {
+        // 上传到S3
+        const uploadResult = await s3_1.S3Utils.uploadFile(s3Path, processedImageBuffer, {
             contentType: 'image/jpeg'
         });
         if (!uploadResult.success) {
@@ -73,10 +73,10 @@ const uploadImage = async (req, res) => {
         logger_1.logger.info('文件上传成功:', {
             originalName: req.file.originalname,
             filename,
-            ossPath: uploadResult.filePath,
+            s3Path: uploadResult.filePath,
             size: req.file.size,
             url: uploadResult.url,
-            environment: oss_1.OSSUtils.getEnvironmentInfo().environment
+            environment: s3_1.S3Utils.getEnvironmentInfo().environment
         });
         res.json({
             success: true,
@@ -86,7 +86,7 @@ const uploadImage = async (req, res) => {
                 size: processedImageBuffer.length,
                 mime_type: 'image/jpeg',
                 url: uploadResult.url,
-                oss_path: uploadResult.filePath
+                s3_path: uploadResult.filePath
             }
         });
     }
@@ -130,7 +130,7 @@ const uploadPaymentQr = async (req, res) => {
         }
         // 生成文件名
         const filename = generateFilename(req.file.originalname);
-        const ossPath = `qr/${filename.replace('.jpeg', '.png').replace('.jpg', '.png')}`;
+        const s3Path = `qr/${filename.replace('.jpeg', '.png').replace('.jpg', '.png')}`;
         // 处理二维码图片（不压缩，保持清晰度）
         const processedImageBuffer = await (0, sharp_1.default)(req.file.buffer)
             .resize(500, 500, {
@@ -139,8 +139,8 @@ const uploadPaymentQr = async (req, res) => {
         })
             .png({ quality: 100 }) // 转为PNG格式，保持最高质量
             .toBuffer();
-        // 上传到OSS
-        const uploadResult = await oss_1.OSSUtils.uploadFile(ossPath, processedImageBuffer, {
+        // 上传到S3
+        const uploadResult = await s3_1.S3Utils.uploadFile(s3Path, processedImageBuffer, {
             contentType: 'image/png'
         });
         if (!uploadResult.success) {
@@ -152,10 +152,10 @@ const uploadPaymentQr = async (req, res) => {
         logger_1.logger.info('支付二维码上传成功:', {
             originalName: req.file.originalname,
             filename,
-            ossPath: uploadResult.filePath,
+            s3Path: uploadResult.filePath,
             size: req.file.size,
             url: uploadResult.url,
-            environment: oss_1.OSSUtils.getEnvironmentInfo().environment
+            environment: s3_1.S3Utils.getEnvironmentInfo().environment
         });
         res.json({
             success: true,
@@ -165,7 +165,7 @@ const uploadPaymentQr = async (req, res) => {
                 size: processedImageBuffer.length,
                 mime_type: 'image/png',
                 url: uploadResult.url,
-                oss_path: uploadResult.filePath
+                s3_path: uploadResult.filePath
             }
         });
     }
@@ -215,18 +215,18 @@ const deleteFile = async (req, res) => {
                 message: '无效的文件类型'
             });
         }
-        // 构建OSS文件路径
-        const ossPath = `${type}/${filename}`;
+        // 构建S3文件路径
+        const s3Path = `${type}/${filename}`;
         // 先检查文件是否存在
-        const fileExists = await oss_1.OSSUtils.fileExists(ossPath);
+        const fileExists = await s3_1.S3Utils.fileExists(s3Path);
         if (!fileExists) {
             return res.status(404).json({
                 success: false,
                 message: '文件不存在'
             });
         }
-        // 删除OSS文件
-        const deleteResult = await oss_1.OSSUtils.deleteFile(ossPath);
+        // 删除S3文件
+        const deleteResult = await s3_1.S3Utils.deleteFile(s3Path);
         if (!deleteResult.success) {
             return res.status(500).json({
                 success: false,
@@ -236,8 +236,8 @@ const deleteFile = async (req, res) => {
         logger_1.logger.info('文件删除成功:', {
             filename,
             type,
-            ossPath: oss_1.OSSUtils.getEnvironmentPath(ossPath),
-            environment: oss_1.OSSUtils.getEnvironmentInfo().environment
+            s3Path: s3_1.S3Utils.getEnvironmentPath(s3Path),
+            environment: s3_1.S3Utils.getEnvironmentInfo().environment
         });
         res.json({
             success: true,
@@ -272,24 +272,24 @@ const deleteFile = async (req, res) => {
     }
 };
 exports.deleteFile = deleteFile;
-// 获取OSS环境信息
-const getOssEnvironmentInfo = async (req, res) => {
+// 获取S3环境信息
+const getS3EnvironmentInfo = async (req, res) => {
     try {
-        const envInfo = oss_1.OSSUtils.getEnvironmentInfo();
+        const envInfo = s3_1.S3Utils.getEnvironmentInfo();
         res.json({
             success: true,
             data: envInfo
         });
     }
     catch (error) {
-        logger_1.logger.error('获取OSS环境信息失败:', error);
+        logger_1.logger.error('获取S3环境信息失败:', error);
         res.status(500).json({
             success: false,
             message: '获取环境信息失败'
         });
     }
 };
-exports.getOssEnvironmentInfo = getOssEnvironmentInfo;
+exports.getS3EnvironmentInfo = getS3EnvironmentInfo;
 // 上传转账截图
 const uploadTransferScreenshot = async (req, res) => {
     try {
@@ -328,9 +328,9 @@ const uploadTransferScreenshot = async (req, res) => {
             .toBuffer();
         // 生成文件名
         const filename = generateFilename(req.file.originalname);
-        const ossPath = `transfer-screenshots/${filename}`;
-        // 上传到OSS
-        const result = await oss_1.OSSUtils.uploadFile(ossPath, compressedBuffer, {
+        const s3Path = `transfer-screenshots/${filename}`;
+        // 上传到S3
+        const result = await s3_1.S3Utils.uploadFile(s3Path, compressedBuffer, {
             contentType: 'image/jpeg'
         });
         // [DEBUG v1.0.0] 详细的上传结果日志 - 临时调试用，后续需要删除
@@ -339,7 +339,7 @@ const uploadTransferScreenshot = async (req, res) => {
             service: 'coin-trading-api',
             originalName: req.file.originalname,
             filename: filename,
-            ossPath: ossPath,
+            s3Path: s3Path,
             url: result.url,
             size: compressedBuffer.length,
             environment: envInfo

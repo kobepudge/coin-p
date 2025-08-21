@@ -55,9 +55,21 @@ class OrderModel extends sequelize_1.Model {
     canCancel() {
         return this.status === 'pending';
     }
-    // 安全的JSON序列化
+    // 安全的JSON序列化，避免循环引用
     toSafeJSON() {
-        return this.toJSON();
+        const json = this.toJSON();
+        // 如果包含merchant关联，只保留必要字段，避免循环引用
+        if (json.merchant) {
+            json.merchant = {
+                id: json.merchant.id,
+                name: json.merchant.name,
+                type: json.merchant.type,
+                status: json.merchant.status,
+                trade_method: json.merchant.trade_method,
+                price: json.merchant.price
+            };
+        }
+        return json;
     }
 }
 exports.OrderModel = OrderModel;

@@ -3,7 +3,7 @@ import multer from 'multer'
 import sharp from 'sharp'
 import path from 'path'
 import { logger } from '@/utils/logger'
-import { OSSUtils } from '@/config/oss'
+import { S3Utils } from '@/config/s3'
 
 // 配置multer存储
 const storage = multer.memoryStorage()
@@ -23,10 +23,10 @@ const upload = multer({
   }
 })
 
-// OSS环境信息日志函数
+// S3环境信息日志函数
 const logEnvironmentInfo = () => {
-  const envInfo = OSSUtils.getEnvironmentInfo()
-  logger.info('OSS环境配置:', envInfo)
+  const envInfo = S3Utils.getEnvironmentInfo()
+  logger.info('S3环境配置:', envInfo)
   return envInfo
 }
 
@@ -51,7 +51,7 @@ export const uploadImage = async (req: Request, res: Response) => {
 
     // 生成文件名
     const filename = generateFilename(req.file.originalname)
-    const ossPath = `images/${filename.replace('.jpeg', '.jpg').replace('.png', '.jpg')}`
+    const s3Path = `images/${filename.replace('.jpeg', '.jpg').replace('.png', '.jpg')}`
 
     // 使用sharp处理图片（压缩和格式转换）
     const processedImageBuffer = await sharp(req.file.buffer)
@@ -62,9 +62,9 @@ export const uploadImage = async (req: Request, res: Response) => {
       .jpeg({ quality: 85 }) // 转为JPEG格式，85%质量
       .toBuffer()
 
-    // 上传到OSS
-    const uploadResult = await OSSUtils.uploadFile(
-      ossPath,
+    // 上传到S3
+    const uploadResult = await S3Utils.uploadFile(
+      s3Path,
       processedImageBuffer,
       {
         contentType: 'image/jpeg'
@@ -81,10 +81,10 @@ export const uploadImage = async (req: Request, res: Response) => {
     logger.info('文件上传成功:', {
       originalName: req.file.originalname,
       filename,
-      ossPath: uploadResult.filePath,
+      s3Path: uploadResult.filePath,
       size: req.file.size,
       url: uploadResult.url,
-      environment: OSSUtils.getEnvironmentInfo().environment
+      environment: S3Utils.getEnvironmentInfo().environment
     })
 
     res.json({
@@ -95,7 +95,7 @@ export const uploadImage = async (req: Request, res: Response) => {
         size: processedImageBuffer.length,
         mime_type: 'image/jpeg',
         url: uploadResult.url,
-        oss_path: uploadResult.filePath
+        s3_path: uploadResult.filePath
       }
     })
   } catch (error: any) {
@@ -140,7 +140,7 @@ export const uploadPaymentQr = async (req: Request, res: Response) => {
 
     // 生成文件名
     const filename = generateFilename(req.file.originalname)
-    const ossPath = `qr/${filename.replace('.jpeg', '.png').replace('.jpg', '.png')}`
+    const s3Path = `qr/${filename.replace('.jpeg', '.png').replace('.jpg', '.png')}`
 
     // 处理二维码图片（不压缩，保持清晰度）
     const processedImageBuffer = await sharp(req.file.buffer)
@@ -151,9 +151,9 @@ export const uploadPaymentQr = async (req: Request, res: Response) => {
       .png({ quality: 100 }) // 转为PNG格式，保持最高质量
       .toBuffer()
 
-    // 上传到OSS
-    const uploadResult = await OSSUtils.uploadFile(
-      ossPath,
+    // 上传到S3
+    const uploadResult = await S3Utils.uploadFile(
+      s3Path,
       processedImageBuffer,
       {
         contentType: 'image/png'
@@ -170,10 +170,10 @@ export const uploadPaymentQr = async (req: Request, res: Response) => {
     logger.info('支付二维码上传成功:', {
       originalName: req.file.originalname,
       filename,
-      ossPath: uploadResult.filePath,
+      s3Path: uploadResult.filePath,
       size: req.file.size,
       url: uploadResult.url,
-      environment: OSSUtils.getEnvironmentInfo().environment
+      environment: S3Utils.getEnvironmentInfo().environment
     })
 
     res.json({
@@ -184,7 +184,7 @@ export const uploadPaymentQr = async (req: Request, res: Response) => {
         size: processedImageBuffer.length,
         mime_type: 'image/png',
         url: uploadResult.url,
-        oss_path: uploadResult.filePath
+        s3_path: uploadResult.filePath
       }
     })
   } catch (error: any) {
@@ -237,11 +237,11 @@ export const deleteFile = async (req: Request, res: Response) => {
       })
     }
 
-    // 构建OSS文件路径
-    const ossPath = `${type}/${filename}`
-    
+    // 构建S3文件路径
+    const s3Path = `${type}/${filename}`
+
     // 先检查文件是否存在
-    const fileExists = await OSSUtils.fileExists(ossPath)
+    const fileExists = await S3Utils.fileExists(s3Path)
     if (!fileExists) {
       return res.status(404).json({
         success: false,
@@ -249,8 +249,8 @@ export const deleteFile = async (req: Request, res: Response) => {
       })
     }
 
-    // 删除OSS文件
-    const deleteResult = await OSSUtils.deleteFile(ossPath)
+    // 删除S3文件
+    const deleteResult = await S3Utils.deleteFile(s3Path)
     
     if (!deleteResult.success) {
       return res.status(500).json({
@@ -259,11 +259,11 @@ export const deleteFile = async (req: Request, res: Response) => {
       })
     }
 
-    logger.info('文件删除成功:', { 
-      filename, 
-      type, 
-      ossPath: OSSUtils.getEnvironmentPath(ossPath),
-      environment: OSSUtils.getEnvironmentInfo().environment
+    logger.info('文件删除成功:', {
+      filename,
+      type,
+      s3Path: S3Utils.getEnvironmentPath(s3Path),
+      environment: S3Utils.getEnvironmentInfo().environment
     })
     
     res.json({
@@ -299,17 +299,17 @@ export const deleteFile = async (req: Request, res: Response) => {
   }
 }
 
-// 获取OSS环境信息
-export const getOssEnvironmentInfo = async (req: Request, res: Response) => {
+// 获取S3环境信息
+export const getS3EnvironmentInfo = async (req: Request, res: Response) => {
   try {
-    const envInfo = OSSUtils.getEnvironmentInfo()
-    
+    const envInfo = S3Utils.getEnvironmentInfo()
+
     res.json({
       success: true,
       data: envInfo
     })
   } catch (error) {
-    logger.error('获取OSS环境信息失败:', error)
+    logger.error('获取S3环境信息失败:', error)
     res.status(500).json({
       success: false,
       message: '获取环境信息失败'
@@ -359,10 +359,10 @@ export const uploadTransferScreenshot = async (req: Request, res: Response) => {
 
     // 生成文件名
     const filename = generateFilename(req.file.originalname)
-    const ossPath = `transfer-screenshots/${filename}`
+    const s3Path = `transfer-screenshots/${filename}`
 
-    // 上传到OSS
-    const result = await OSSUtils.uploadFile(ossPath, compressedBuffer, {
+    // 上传到S3
+    const result = await S3Utils.uploadFile(s3Path, compressedBuffer, {
       contentType: 'image/jpeg'
     })
 
@@ -372,7 +372,7 @@ export const uploadTransferScreenshot = async (req: Request, res: Response) => {
       service: 'coin-trading-api',
       originalName: req.file.originalname,
       filename: filename,
-      ossPath: ossPath,
+      s3Path: s3Path,
       url: result.url,
       size: compressedBuffer.length,
       environment: envInfo

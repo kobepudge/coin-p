@@ -14,6 +14,19 @@ if (!fs_1.default.existsSync(logDir)) {
 }
 // 日志格式
 const logFormat = winston_1.default.format.combine(winston_1.default.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), winston_1.default.format.errors({ stack: true }), winston_1.default.format.json());
+// 安全的JSON序列化函数，处理循环引用
+const safeStringify = (obj, space) => {
+    const seen = new WeakSet();
+    return JSON.stringify(obj, (key, value) => {
+        if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+                return '[Circular Reference]';
+            }
+            seen.add(value);
+        }
+        return value;
+    }, space);
+};
 // 控制台输出格式
 const consoleFormat = winston_1.default.format.combine(winston_1.default.format.colorize(), winston_1.default.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), winston_1.default.format.printf(({ timestamp, level, message, stack, ...meta }) => {
     let logMessage = `${timestamp} [${level}]: ${message}`;
@@ -21,9 +34,14 @@ const consoleFormat = winston_1.default.format.combine(winston_1.default.format.
     if (stack) {
         logMessage += `\n${stack}`;
     }
-    // 添加额外元数据
+    // 添加额外元数据，使用安全的JSON序列化
     if (Object.keys(meta).length > 0) {
-        logMessage += `\n${JSON.stringify(meta, null, 2)}`;
+        try {
+            logMessage += `\n${safeStringify(meta, 2)}`;
+        }
+        catch (error) {
+            logMessage += `\n[Error serializing meta data: ${error}]`;
+        }
     }
     return logMessage;
 }));

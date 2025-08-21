@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { uploadImage, uploadPaymentQr, uploadTransferScreenshot, deleteFile, uploadMiddleware, getOssEnvironmentInfo } from '@/controllers/upload'
+import { uploadImage, uploadPaymentQr, uploadTransferScreenshot, deleteFile, uploadMiddleware, getS3EnvironmentInfo } from '@/controllers/upload'
 import { authenticateToken } from '@/middlewares/auth'
-import { OSSUtils, ossClient, OSS_ENV_PREFIX } from '@/config/oss'
+import { S3Utils, s3Client, S3_ENV_PREFIX } from '@/config/s3'
 import { logger } from '@/utils/logger'
 
 const router = Router()
@@ -18,8 +18,8 @@ router.post('/transfer-screenshot', uploadMiddleware.single('screenshot'), uploa
 // 删除文件 (需要认证)
 router.delete('/:filename', authenticateToken, deleteFile)
 
-// 获取OSS环境信息 (需要认证)
-router.get('/environment-info', authenticateToken, getOssEnvironmentInfo)
+// 获取S3环境信息 (需要认证)
+router.get('/environment-info', authenticateToken, getS3EnvironmentInfo)
 
 
 

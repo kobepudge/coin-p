@@ -33,9 +33,14 @@ class MerchantModel extends sequelize_1.Model {
             await this.save();
         }
     }
-    // 安全的JSON序列化
+    // 安全的JSON序列化，避免循环引用
     toSafeJSON() {
-        return this.toJSON();
+        const json = this.toJSON();
+        // 如果包含orders关联，移除它以避免循环引用
+        if (json.orders) {
+            delete json.orders;
+        }
+        return json;
     }
 }
 exports.MerchantModel = MerchantModel;

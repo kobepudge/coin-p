@@ -26,8 +26,9 @@
   "author": "游戏金币交易平台",
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.872.0",
+    "@aws-sdk/s3-request-presigner": "^3.872.0",
     "@types/ali-oss": "^6.16.11",
-    "ali-oss": "^6.23.0",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
