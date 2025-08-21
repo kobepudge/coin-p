@@ -62,9 +62,16 @@ export class MerchantModel extends Model<Merchant, MerchantCreationAttributes> i
     }
   }
 
-  // 安全的JSON序列化
-  public toSafeJSON(): Omit<Merchant, never> {
-    return this.toJSON()
+  // 安全的JSON序列化，避免循环引用
+  public toSafeJSON(): any {
+    const json = this.toJSON() as any
+
+    // 如果包含orders关联，移除它以避免循环引用
+    if (json.orders) {
+      delete json.orders
+    }
+
+    return json
   }
 }
 
@@ -133,7 +140,7 @@ MerchantModel.init(
     alipay_account: {
       type: DataTypes.STRING(100),
       allowNull: true,
-      comment: '支付宝账号',
+      comment: '支付宝收款账号',
       validate: {
         len: [0, 100]
       }

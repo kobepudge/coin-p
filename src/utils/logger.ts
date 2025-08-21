@@ -15,23 +15,41 @@ const logFormat = winston.format.combine(
   winston.format.json()
 )
 
+// 安全的JSON序列化函数，处理循环引用
+const safeStringify = (obj: any, space?: number): string => {
+  const seen = new WeakSet()
+  return JSON.stringify(obj, (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Circular Reference]'
+      }
+      seen.add(value)
+    }
+    return value
+  }, space)
+}
+
 // 控制台输出格式
 const consoleFormat = winston.format.combine(
   winston.format.colorize(),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
     let logMessage = `${timestamp} [${level}]: ${message}`
-    
+
     // 添加错误堆栈
     if (stack) {
       logMessage += `\n${stack}`
     }
-    
-    // 添加额外元数据
+
+    // 添加额外元数据，使用安全的JSON序列化
     if (Object.keys(meta).length > 0) {
-      logMessage += `\n${JSON.stringify(meta, null, 2)}`
+      try {
+        logMessage += `\n${safeStringify(meta, 2)}`
+      } catch (error) {
+        logMessage += `\n[Error serializing meta data: ${error}]`
+      }
     }
-    
+
     return logMessage
   })
 )

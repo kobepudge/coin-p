@@ -77,9 +77,23 @@ export class OrderModel extends Model<Order, OrderCreationAttributes> implements
     return this.status === 'pending'
   }
 
-  // 安全的JSON序列化
-  public toSafeJSON(): Omit<Order, never> {
-    return this.toJSON()
+  // 安全的JSON序列化，避免循环引用
+  public toSafeJSON(): any {
+    const json = this.toJSON() as any
+
+    // 如果包含merchant关联，只保留必要字段，避免循环引用
+    if (json.merchant) {
+      json.merchant = {
+        id: json.merchant.id,
+        name: json.merchant.name,
+        type: json.merchant.type,
+        status: json.merchant.status,
+        trade_method: json.merchant.trade_method,
+        price: json.merchant.price
+      }
+    }
+
+    return json
   }
 }
 
