@@ -29,7 +29,8 @@ const s3Config = {
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
     bucket: process.env.AWS_S3_BUCKET || '',
     region: process.env.AWS_S3_REGION || 'us-east-1',
-    endpoint: process.env.AWS_S3_ENDPOINT // 可选的自定义端点
+    uploadEndpoint: process.env.AWS_S3_UPLOAD_ENDPOINT, // 用于上传的S3端点
+    accessDomain: process.env.AWS_S3_ACCESS_DOMAIN // 用于生成访问URL的域名
 };
 // 验证必要的S3配置
 const isS3Configured = s3Config.accessKeyId && s3Config.secretAccessKey && s3Config.bucket;
@@ -47,7 +48,7 @@ exports.s3Client = isS3Configured ? new client_s3_1.S3Client({
         accessKeyId: s3Config.accessKeyId,
         secretAccessKey: s3Config.secretAccessKey
     },
-    ...(s3Config.endpoint && { endpoint: s3Config.endpoint })
+    ...(s3Config.uploadEndpoint && { endpoint: s3Config.uploadEndpoint })
 }) : null;
 // S3工具类
 class S3Utils {
@@ -89,8 +90,8 @@ class S3Utils {
             });
             await exports.s3Client.send(command);
             // 生成文件访问URL
-            const url = s3Config.endpoint
-                ? `${s3Config.endpoint}/${s3Config.bucket}/${environmentPath}`
+            const url = s3Config.accessDomain
+                ? `${s3Config.accessDomain}/${environmentPath}`
                 : `https://${s3Config.bucket}.s3.${s3Config.region}.amazonaws.com/${environmentPath}`;
             logger_1.logger.info('S3文件上传成功:', {
                 originalPath: filePath,
@@ -255,8 +256,8 @@ class S3Utils {
             const result = await exports.s3Client.send(command);
             const files = (result.Contents || []).map(obj => ({
                 name: obj.Key || '',
-                url: s3Config.endpoint
-                    ? `${s3Config.endpoint}/${s3Config.bucket}/${obj.Key}`
+                url: s3Config.accessDomain
+                    ? `${s3Config.accessDomain}/${obj.Key}`
                     : `https://${s3Config.bucket}.s3.${s3Config.region}.amazonaws.com/${obj.Key}`,
                 size: obj.Size || 0,
                 lastModified: obj.LastModified || new Date()
@@ -298,7 +299,8 @@ class S3Utils {
             isDevelopment,
             bucket: s3Config.bucket,
             region: s3Config.region,
-            endpoint: s3Config.endpoint,
+            uploadEndpoint: s3Config.uploadEndpoint,
+            accessDomain: s3Config.accessDomain,
             databasePrefix: process.env.DATABASE_PREFIX || 'dev'
         };
     }
