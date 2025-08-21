@@ -38,7 +38,6 @@ RUN npm ci --only=production && \
 # 复制构建产物和数据库配置
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --chown=nodejs:nodejs src/config/database.js ./src/config/
-COPY --chown=nodejs:nodejs src/database/migrations ./src/database/migrations/
 COPY --chown=nodejs:nodejs .sequelizerc ./
 COPY --chown=nodejs:nodejs start.sh ./
 
